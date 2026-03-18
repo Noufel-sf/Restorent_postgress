@@ -11,7 +11,6 @@ const RevenueBarChart = dynamic(
 
 // or use it in a server component with suspense
 
-
 const OrdersLineChart = dynamic(
   () => import("./charts/OrdersLineChart"),
   { ssr: false }

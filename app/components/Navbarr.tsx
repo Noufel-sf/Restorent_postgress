@@ -3,7 +3,6 @@
 import Link from "next/link";
 import React from "react";
 import { CiShoppingCart } from "react-icons/ci";
-import Button from "./ui/Button";
 
 const Navbar: React.FC = () => {
   return (
@@ -12,9 +11,11 @@ const Navbar: React.FC = () => {
         {/* Logo */}
         <div className="flex items-center gap-2">
           {/* If you have an SVG/logo image, replace this text with <Image /> */}
-          <span className="text-2xl font-sans tracking-tight text-primary">
+          <Link href="/" className="text-2xl font-sans tracking-tight text-primary">
+          <span className="text-2xl font-sans font-extrabold tracking-tight text-primary">
             Pepper
           </span>
+          </Link>
         </div>
 
         {/* Desktop links */}
