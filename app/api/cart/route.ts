@@ -1,187 +1,76 @@
-// app/api/cart/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/db";
-import { carts, cartItems, foods } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { mockStore } from "@/lib/mockStore";
 
-//
-// =====================
-//        GET CART
-// =====================
-//
+function getOrGenerateGuestId(request: NextRequest): { guestId: string; isNew: boolean } {
+  const existing = request.cookies.get("guestId")?.value;
+  if (existing) {
+    return { guestId: existing, isNew: false };
+  }
+  const newGuestId = `guest-${Math.random().toString(36).slice(2, 10)}`;
+  return { guestId: newGuestId, isNew: true };
+}
 
+// GET /api/cart
 export async function GET(request: NextRequest) {
   try {
- // read guestId from cookie
-    const guestId = request.cookies.get("guestId")?.value;
+    const { guestId, isNew } = getOrGenerateGuestId(request);
+    const cart = mockStore.getCart(guestId);
 
-    if (!guestId)
-      return NextResponse.json({ error: "guestId required" }, { status: 400 });
-
-    // Find or create guest cart
-    let cart = await db
-      .select()
-      .from(carts)
-      .where(eq(carts.guestId, guestId))
-      .limit(1);
-
-    if (!cart[0]) {
-      const newCart = await db
-        .insert(carts)
-        .values({ guestId })
-        .returning();
-      cart = newCart;
+    const response = NextResponse.json(cart);
+    if (isNew) {
+      response.cookies.set("guestId", guestId, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30,
+        sameSite: "lax",
+      });
     }
-
-    const cartId = cart[0].id;
-
-    // Fetch items + food info
-    const items = await db
-      .select({
-        id: cartItems.id,
-        quantity: cartItems.quantity,
-        price: cartItems.price,
-        createdAt: cartItems.createdAt,
-        food: foods,
-      })
-      .from(cartItems)
-      .leftJoin(foods, eq(cartItems.foodId, foods.id))
-      .where(eq(cartItems.cartId, cartId));
-
-    return NextResponse.json({ ...cart[0], items });
+    return response;
   } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { error: "Failed to fetch cart" },
-      { status: 500 }
-    );
+    console.error("Cart GET error:", error);
+    return NextResponse.json({ error: "Failed to fetch cart" }, { status: 500 });
   }
 }
 
-//
-// =====================
-//     ADD ITEM TO CART
-// =====================
-//
-
+// POST /api/cart
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {  foodId, quantity = 1 } = body;
+    const { foodId, quantity = 1 } = body;
 
-     // read guestId from cookie
-    const guestId = request.cookies.get("guestId")?.value;
+    const { guestId, isNew } = getOrGenerateGuestId(request);
 
-    if (!guestId || !foodId) {
-      return NextResponse.json(
-        { error: "guestId and foodId required" },
-        { status: 400 }
-      );
+    if (!foodId) {
+      return NextResponse.json({ error: "foodId is required" }, { status: 400 });
     }
 
-    if (!guestId || !foodId)
-      return NextResponse.json(
-        { error: "guestId and foodId required" },
-        { status: 400 }
-      );
-
-    // Find or create guest cart
-    let cart = await db
-      .select()
-      .from(carts)
-      .where(eq(carts.guestId, guestId))
-      .limit(1);
-
-    if (!cart[0]) {
-      const newCart = await db
-        .insert(carts)
-        .values({ guestId })
-        .returning();
-      cart = newCart;
+    const item = mockStore.addToCart(guestId, foodId, Number(quantity) || 1);
+    if (!item) {
+      return NextResponse.json({ error: "Food item not found" }, { status: 404 });
     }
 
-    const cartId = cart[0].id;
-
-    // Check if item already exists
-    const existingItem = await db
-      .select()
-      .from(cartItems)
-      .where(
-        and(eq(cartItems.cartId, cartId), eq(cartItems.foodId, foodId))
-      )
-      .limit(1);
-
-    if (existingItem[0]) {
-      const updated = await db
-        .update(cartItems)
-        .set({ quantity: existingItem[0].quantity + quantity })
-        .where(eq(cartItems.id, existingItem[0].id))
-        .returning();
-
-      return NextResponse.json(updated[0], { status: 200 });
+    const response = NextResponse.json(item, { status: 201 });
+    if (isNew) {
+      response.cookies.set("guestId", guestId, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30,
+        sameSite: "lax",
+      });
     }
-
-    // Food price lookup
-    const food = await db
-      .select()
-      .from(foods)
-      .where(eq(foods.id, foodId))
-      .limit(1);
-
-    if (!food[0])
-      return NextResponse.json({ error: "Food not found" }, { status: 404 });
-
-    // Insert new cart item
-    const newItem = await db
-      .insert(cartItems)
-      .values({
-        cartId,
-        foodId,
-        quantity,
-        price: food[0].price,
-      })
-      .returning();
-
-    return NextResponse.json(newItem[0], { status: 201 });
+    return response;
   } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { error: "Failed to add item to cart" },
-      { status: 500 }
-    );
+    console.error("Cart POST error:", error);
+    return NextResponse.json({ error: "Failed to add item to cart" }, { status: 500 });
   }
 }
 
-//
-// =====================
-//       CLEAR CART
-// =====================
-//
-
+// DELETE /api/cart
 export async function DELETE(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const guestId = searchParams.get("guestId");
-
-    if (!guestId)
-      return NextResponse.json({ error: "guestId required" }, { status: 400 });
-
-    const cart = await db
-      .select()
-      .from(carts)
-      .where(eq(carts.guestId, guestId))
-      .limit(1);
-
-    if (cart[0]) {
-      await db.delete(cartItems).where(eq(cartItems.cartId, cart[0].id));
-    }
-
+    const { guestId } = getOrGenerateGuestId(request);
+    mockStore.clearCart(guestId);
     return NextResponse.json({ message: "Cart cleared successfully" });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { error: "Failed to clear cart" },
-      { status: 500 }
-    );
+    console.error("Cart DELETE error:", error);
+    return NextResponse.json({ error: "Failed to clear cart" }, { status: 500 });
   }
 }

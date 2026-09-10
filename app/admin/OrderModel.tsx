@@ -15,54 +15,58 @@ type Props = {
 const OrderDetailsModal: React.FC<Props> = ({ open, onClose, order }) => {
   if (!open || !order) return null;
 
-  const subtotal = order.items.reduce(
+  const items = order.items || [];
+  const subtotal = items.reduce(
     (acc, item) => acc + item.price * item.quantity,
     0
   );
-  const shipping = 4;
-  const taxes = 2;
-  const discount = 0;
-  const total = subtotal + shipping + taxes - discount;
+  const shipping = 3.99;
+  const taxes = Number((subtotal * 0.08).toFixed(2));
+  const total = subtotal + shipping + taxes;
+
+  const fullName = order.info?.fullName || order.fullName || "Customer";
+  const email = order.info?.email || order.email || "customer@example.com";
+  const phone = order.info?.phoneNumber || order.phoneNumber || "+1 (555) 000-0000";
+  const address = order.info?.address || order.address || "Delivery Address";
+  const city = order.info?.city || order.city || "City";
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-lg">
-        <div className="mb-4 flex items-center justify-between ">
-          <div className="w-full">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-lg max-h-[90vh] overflow-y-auto">
+        <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold text-gray-900">
                 Order #{order.id}
               </h2>
-              <button
-                onClick={onClose}
-                className="text-sm cursor-pointer text-gray-400 hover:text-gray-700"
-              >
-                ×
-              </button>
+              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary capitalize">
+                {order.status}
+              </span>
             </div>
-            <div className="flex flex-col gap-1 items-start">
-              <div className="flex flex-col text-xs text-gray-500">
-                <p>{order.info.fullName}</p>
-                <p>{order.info.email}</p>
-                <p>{order.info.phoneNumber}</p>
-                <p>
-                  {order.info.address}, {order.info.city}
-                </p>
-              </div>
+            <div className="mt-1 text-xs text-gray-500">
+              <p className="font-semibold text-gray-800">{fullName} • {email} • {phone}</p>
+              <p>{address}, {city}</p>
             </div>
           </div>
+          <button
+            onClick={onClose}
+            className="text-lg font-bold text-gray-400 hover:text-gray-700"
+          >
+            ×
+          </button>
         </div>
 
-        <div className="flex items-start gap-6">
-          <div className="flex flex-col items-center gap-3 w-1/2">
-            {order.items.map((item: OrderItemType) => (
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div className="flex flex-col gap-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Order Items</h3>
+            {items.map((item: OrderItemType) => (
               <OrderItem key={item.id} item={item} />
             ))}
           </div>
 
-          <div className="rounded-2xl border w-1/2 border-gray-100 bg-white p-4">
-            <h3 className="text-sm font-semibold text-gray-900">
-              Order Summary
+          <div className="h-fit rounded-2xl border border-gray-100 bg-gray-50/50 p-4">
+            <h3 className="text-sm font-bold text-gray-900">
+              Payment Summary
             </h3>
             <div className="mt-3 space-y-2 text-xs text-gray-600">
               <div className="flex justify-between">
@@ -70,21 +74,17 @@ const OrderDetailsModal: React.FC<Props> = ({ open, onClose, order }) => {
                 <span>${subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Shipping</span>
+                <span>Delivery</span>
                 <span>${shipping.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Taxes</span>
+                <span>Taxes (8%)</span>
                 <span>${taxes.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Discount</span>
-                <span>${discount.toFixed(2)}</span>
-              </div>
-              <div className="mt-3 border-t border-gray-100 pt-3 text-sm font-semibold text-gray-900">
+              <div className="mt-3 border-t border-gray-200 pt-3 text-sm font-bold text-gray-900">
                 <div className="flex justify-between">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span className="text-primary">${total.toFixed(2)}</span>
                 </div>
               </div>
             </div>

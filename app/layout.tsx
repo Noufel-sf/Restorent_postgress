@@ -3,42 +3,27 @@ import { Gabarito } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "./Utils/QueryProvider";
 import LayoutWrapper from "./LayoutWrapper";
-
-
+import { AuthProvider } from "@/lib/authContext";
 
 const gabarito = Gabarito({
   variable: "--font-gabarito",
   subsets: ["latin"],
 });
 
-
-
-export const metadata = {
-  title: "My Website Title",
-  description: "This is my amazing website description.",
-  keywords: ["food", "delivery", "your brand", "ecommerce"],
-  authors: [{ name: "Your Name" }],
+export const metadata: Metadata = {
+  title: "Pepper Restaurant | Gourmet Food & Fast Delivery",
+  description: "Experience the finest artisan pizzas, burgers, chicken wings, and ramen delivered hot to your door.",
+  keywords: ["restaurant", "food delivery", "pizza", "burger", "ramen", "gourmet"],
   openGraph: {
-    title: "My Website Title",
-    description: "A powerful eCommerce experience.",
-    url: "https://yourwebsite.com",
-    siteName: "Your Website",
-    images: [
-      {
-        url: "/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Website preview",
-      },
-    ],
+    title: "Pepper Restaurant | Gourmet Food & Fast Delivery",
+    description: "Experience the finest artisan pizzas, burgers, chicken wings, and ramen delivered hot to your door.",
+    images: ["/pizza1.jpg"],
     type: "website",
   },
   icons: {
     icon: "/favicon.ico",
   },
 };
-
-
 
 export default function RootLayout({
   children,
@@ -48,13 +33,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`antialiased ${gabarito.variable}`}>
-        <LayoutWrapper>
-          <QueryProvider>
-            {/* <Suspense fallback={<Spinner  />}> */}
+        <QueryProvider>
+          <AuthProvider>
+            <LayoutWrapper>
               {children}
-            {/* </Suspense> */}
-          </QueryProvider>
-        </LayoutWrapper>
+            </LayoutWrapper>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

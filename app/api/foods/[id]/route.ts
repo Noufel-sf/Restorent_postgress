@@ -1,40 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from "@/db/db";
-import { foods } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { Food } from '@/app/Utils/Types';
-
-
+import { NextRequest, NextResponse } from "next/server";
+import { mockStore } from "@/lib/mockStore";
 
 export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params; // MUST await in App Router
-
+    const { id } = await context.params;
     const body = await request.json();
     const { name, description, price, weight, imageUrl, categoryId } = body;
 
-    // 🟦 Build update object (ignore undefined fields)
-    const updateData: Food = {
+    const updated = mockStore.updateFood(id, {
       ...(name && { name }),
-      ...(description && { description }),
-      ...(price && { price: parseFloat(price) }),
+      ...(description !== undefined && { description }),
+      ...(price !== undefined && { price: parseFloat(price) }),
       ...(weight && { weight }),
       ...(imageUrl && { imageUrl }),
       ...(categoryId && { categoryId }),
-      updatedAt: new Date(), // optional
-    };
+    });
 
-    
-    const updated = await db
-      .update(foods)
-      .set(updateData)
-      .where(eq(foods.id, id))
-      .returning(); // same as Prisma include but for the table only
+    if (!updated) {
+      return NextResponse.json({ error: "Food item not found" }, { status: 404 });
+    }
 
-    return NextResponse.json(updated[0]);
+    return NextResponse.json(updated);
   } catch (error) {
     console.error("Error updating food:", error);
     return NextResponse.json(
@@ -44,17 +33,13 @@ export async function PUT(
   }
 }
 
-
-
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params;   // you must await context.params to get the id
-
-    await db.delete(foods).where(eq(foods.id, id));
-
+    const { id } = await context.params;
+    mockStore.deleteFood(id);
     return NextResponse.json({ message: "Food item deleted" });
   } catch (error) {
     console.error("Error deleting food:", error);

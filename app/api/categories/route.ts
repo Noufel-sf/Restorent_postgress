@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { db } from "../../../db/db";
-import { categories } from "../../../db/schema";
+import { mockStore } from "@/lib/mockStore";
 
 export async function GET() {
-  const data = await db.select().from(categories);
+  const data = mockStore.getCategories();
   return NextResponse.json(data);
 }

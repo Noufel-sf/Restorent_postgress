@@ -1,17 +1,13 @@
-import { db } from "@/db/db";
 import { NextRequest, NextResponse } from "next/server";
-import { orders } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { mockStore } from "@/lib/mockStore";
 
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params;   
-
-    await db.delete(orders).where(eq(orders.id, id));
-
+    const { id } = await context.params;
+    mockStore.deleteOrder(id);
     return NextResponse.json({ message: "Order item deleted" });
   } catch (error) {
     console.error("Error deleting order:", error);

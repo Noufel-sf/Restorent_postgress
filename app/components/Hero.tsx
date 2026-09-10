@@ -4,6 +4,7 @@ import Image from "next/image";
 import React from "react";
 import Button from "./ui/Button";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 // adjust paths/imports to your image files
 
@@ -127,22 +128,22 @@ const Hero: React.FC = () => {
               className="h-24 w-auto"
             />
           </motion.div>
-
-         
         </div>
 
         {/* Text content */}
         <div className="max-w-5xl relative z-10">
-          <h1 className="text-5xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-8xl"
-           data-aos="fade-up"
+          <h1
+            className="text-5xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-8xl"
+            data-aos="fade-up"
           >
             Your Pizza Party
             <br />
             Starts Here!
           </h1>
 
-          <p className="mt-6 text-base text-gray-700 sm:text-lg"
-           data-aos="fade-up"
+          <p
+            className="mt-6 text-base text-gray-700 sm:text-lg"
+            data-aos="fade-up"
           >
             Gather your friends and family and enjoy the best pizza in town.
             <br className="hidden sm:inline" />
@@ -150,7 +151,12 @@ const Hero: React.FC = () => {
           </p>
 
           <div className="mt-10 flex justify-center">
-            <Button className="px-10 py-4 text-base">View Our Menu</Button>
+            <Link
+              href="/foods"
+              className="inline-flex cursor-pointer items-center justify-center rounded-full bg-primary px-10 py-4 text-base font-semibold text-white shadow-md transition-colors hover:bg-primary/90"
+            >
+              View Our Menu
+            </Link>
           </div>
         </div>
       </div>

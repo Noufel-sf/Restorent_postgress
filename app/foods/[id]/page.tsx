@@ -28,15 +28,19 @@ export default async function FoodDetailsPage({ params }: Props) {
   const { id } = await params;
   
   const food = await getFood(id);
-   const suggestions = await getSuggestedFoods(food.categoryId, food.id);
 
   if (!food) {
-    return <Spinner />;
+    return (
+      <div className="py-24 text-center">
+        <p className="text-2xl font-bold text-gray-800">Food not found</p>
+        <Link href="/foods" className="mt-4 inline-block text-sm text-primary hover:underline">
+          Return to Menu
+        </Link>
+      </div>
+    );
   }
 
-  if (!food) {
-    return <p className="text-3xl text-center">Food not found...</p>;
-  }
+  const suggestions = await getSuggestedFoods(food.categoryId, food.id || "");
 
   return (
     <main className="bg-white py-16 md:py-20">
@@ -59,7 +63,7 @@ export default async function FoodDetailsPage({ params }: Props) {
           {/* Image */}
           <div className="relative h-72 w-full overflow-hidden rounded-3xl bg-gray-50 md:h-96">
             <Image
-              src={food.imageUrl}
+              src={food.imageUrl || "/pizza1.jpg"}
               alt={food.name}
               fill
               className="object-cover"
@@ -87,7 +91,7 @@ export default async function FoodDetailsPage({ params }: Props) {
                 ${food.price.toFixed(2)}
               </span>
 
-              <AddToCartButton foodId={food.id} />
+              <AddToCartButton foodId={food.id || ""} />
             </div>
 
             <div className="mt-8 grid gap-4 text-sm text-gray-700 md:grid-cols-2">

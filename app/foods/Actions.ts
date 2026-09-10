@@ -1,88 +1,78 @@
 "use server";
 
-import { foods ,categories} from "@/db/schema"
-import { db } from "@/db/db";
-import { eq, ne, and } from "drizzle-orm";
+import { mockStore } from "@/lib/mockStore";
 import { Food } from "@/app/Utils/Types";
 import { cache } from "react";
 
-
-export const  getFood = cache(async (id: string) => {
-  const result = await db.select().from(foods).where(eq(foods.id, id));
-  return result[0];
-} 
-);
+export const getFood = cache(async (id: string) => {
+  const item = mockStore.getFoodById(id);
+  if (!item) return undefined;
+  return {
+    ...item,
+    createdAt: new Date(item.createdAt),
+    updatedAt: new Date(item.updatedAt),
+  } as Food;
+});
 
 export async function getAllFoods(page = 1, limit = 6, categoryName?: string) {
-  const offset = (page - 1) * limit;
-
-  // If category name provided, find its ID
-  let categoryId: string | undefined;
-  if (categoryName && categoryName !== "All") {
-    const result = await db
-      .select({ id: categories.id })
-      .from(categories)
-      .where(eq(categories.name, categoryName))
-      .limit(1);
-
-    categoryId = result[0]?.id;
-  }
-
-  // Build query with optional filter
-  const baseQuery = categoryId
-    ? db.select().from(foods).where(eq(foods.categoryId, categoryId))
-    : db.select().from(foods);
-
-  // TOTAL ITEMS (after filtering)
-  const allItems = await baseQuery;
-  const totalItems = allItems.length;
-  const totalPages = Math.ceil(totalItems / limit);
-
-  // PAGINATED ITEMS
-  const items = categoryId
-    ? await db.select().from(foods).where(eq(foods.categoryId, categoryId)).limit(limit).offset(offset)
-    : await db.select().from(foods).limit(limit).offset(offset);
+  const result = mockStore.getAllFoods(page, limit, categoryName);
+  const items = result.items.map((f) => ({
+    ...f,
+    createdAt: new Date(f.createdAt),
+    updatedAt: new Date(f.updatedAt),
+  })) as Food[];
 
   return {
     items,
-    totalPages,
-    currentPage: page,
+    totalPages: result.totalPages,
+    currentPage: result.currentPage,
+    totalItems: result.totalItems,
   };
 }
 
 export const getHomeFoods = cache(async () => {
-  const result = await db.select().from(foods).limit(3);
-  return result;
-}
-);
-
-
-export const getSuggestedFoods = cache(async (categoryId: string, currentId: string) => {
-  const result = await db
-    .select()
-    .from(foods)
-    .where(and(eq(foods.categoryId, categoryId), ne(foods.id, currentId)))
-    .limit(6);
-
-  return result;
+  const result = mockStore.getHomeFoods(3);
+  return result.map((f) => ({
+    ...f,
+    createdAt: new Date(f.createdAt),
+    updatedAt: new Date(f.updatedAt),
+  })) as Food[];
 });
 
+export const getSuggestedFoods = cache(
+  async (categoryId: string, currentId: string) => {
+    const result = mockStore.getSuggestedFoods(categoryId, currentId, 6);
+    return result.map((f) => ({
+      ...f,
+      createdAt: new Date(f.createdAt),
+      updatedAt: new Date(f.updatedAt),
+    })) as Food[];
+  }
+);
 
-export async function createFood(data: Omit<Food, 'id' | 'createdAt' | 'updatedAt'>) {
-  await db.insert(foods).values({
+export async function createFood(data: Omit<Food, "id" | "createdAt" | "updatedAt">) {
+  const created = mockStore.addFood({
     name: data.name,
-    description: data.description,
+    description: data.description || "",
     price: data.price,
-    weight: data.weight,
-    imageUrl: data.imageUrl || '',
+    weight: data.weight || "300 g",
+    imageUrl: data.imageUrl || "/pizza1.jpg",
+    categoryId: data.categoryId,
+  });
+  return created;
+}
+
+export async function updateFood(id: string, data: Food) {
+  return mockStore.updateFood(id, {
+    name: data.name,
+    description: data.description || undefined,
+    price: data.price,
+    weight: data.weight || undefined,
+    imageUrl: data.imageUrl,
     categoryId: data.categoryId,
   });
 }
 
-export async function updateFood(id: string, data: Food) {
-  await db.update(foods).set(data).where(eq(foods.id, id));
-}
-
 export async function deleteFood(id: string) {
-  await db.delete(foods).where(eq(foods.id, id));
+  return mockStore.deleteFood(id);
 }
